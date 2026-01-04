@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PJ Bank</title>
+    <style>
+        :root { --primary: #2c3e50; --income: #27ae60; --expense: #e74c3c; --bg: #f4f7f6; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); display: flex; justify-content: center; padding: 10px; margin: 0; }
+        .container { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 500px; min-height: 400px; }
+        .hidden { display: none !important; }
+        
+        /* Telas */
+        #selection-screen, #password-screen, #app-screen { display: flex; flex-direction: column; gap: 15px; }
+
+        .profile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .profile-btn { padding: 30px 10px; border: 1px solid #eee; border-radius: 12px; cursor: pointer; text-align: center; font-weight: bold; background: #fff; transition: 0.2s; color: var(--primary); }
+        .profile-btn:hover { background: #f8f9fa; border-color: #ccc; }
+
+        input { padding: 14px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; width: 100%; box-sizing: border-box; outline: none; }
+        input:focus { border-color: var(--primary); }
+        
+        button { padding: 14px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .btn-primary { background: var(--primary); color: white; width: 100%; }
+        .btn-back { background: transparent; color: #888; width: 100%; font-size: 14px; text-decoration: underline; }
+        
+        #error-msg { color: var(--expense); font-size: 13px; text-align: center; margin-top: -10px; font-weight: bold; min-height: 18px; }
+
+        .btn-toggle { background: #eee; color: #666; padding: 4px 10px; border-radius: 4px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+        .type-selector { display: flex; gap: 10px; margin: 10px 0; }
+        .type-btn { 
+            flex: 1; 
+            padding: 12px; 
+            border: 2px solid #ddd; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            text-align: center; 
+            font-size: 13px; 
+            font-weight: bold; 
+            color: #888;
+            background: white;
+            transition: all 0.4s ease;
+        }
+        
+        #btn-income:hover { border-color: #a3e4b7; color: var(--income); background: #f0fff4; }
+        #btn-expense:hover { border-color: #f5b7b1; color: var(--expense); background: #fff5f5; }
+
+        .active-income { border-color: var(--income) !important; color: var(--income) !important; background: #f0fff4 !important; }
+        .active-expense { border-color: var(--expense) !important; color: var(--expense) !important; background: #fff5f5 !important; }
+        
+        .month-card { background: #fff; border: 1px solid #eee; margin-top: 15px; border-radius: 8px; overflow: hidden; }
+        .month-header { background: #fdfdfd; padding: 12px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; }
+        .trans-item { display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid #eee; align-items: center; font-size: 14px; }
+        .del-btn { color: #ddd; cursor: pointer; background: none; border: none; font-size: 18px; }
+        .del-btn:hover { color: var(--expense); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="selection-screen">
+        <h2 style="text-align: center; margin-bottom: 20px;">PJ Bank</h2>
+        <div class="profile-grid">
+            <div class="profile-btn" onclick="openPass('Paulo Júnior', '0405')">Paulo Júnior</div>
+            <div class="profile-btn" onclick="openPass('Paulo', '1605')">Paulo</div>
+            <div class="profile-btn" onclick="openPass('Ana', '2026')">Ana</div>
+            <div class="profile-btn" onclick="openPass('Amanda', '0105')">Amanda</div>
+            <div class="profile-btn" onclick="openPass('Kamille', '2303')">Kamille</div>
+        </div>
+    </div>
+
+    <div id="password-screen" class="hidden">
+        <h3 id="pass-title" style="text-align: center; color: var(--primary);"></h3>
+        <input type="password" id="pass-input" placeholder="Senha" maxlength="4" inputmode="numeric">
+        <div id="error-msg"></div>
+        <button class="btn-primary" onclick="checkPass()">Entrar</button>
+        <button class="btn-back" onclick="goBack()">Escolher outro perfil</button>
+    </div>
+
+    <div id="app-screen" class="hidden">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <span id="user-display" style="font-weight: bold; color: var(--primary); font-size: 14px;"></span>
+            <button onclick="location.reload()" style="background:none; color:#999; font-size:11px; padding:0;">Sair</button>
+        </div>
+        
+        <div style="text-align: center; padding: 10px 0;">
+            <div id="balance" style="font-size: 2.2rem; font-weight: bold;">R$ 0,00</div>
+        </div>
+
+        <form id="finance-form">
+            <div class="type-selector">
+                <div id="btn-income" class="type-btn active-income" onclick="setType('income')">RECEITA (+)</div>
+                <div id="btn-expense" class="type-btn" onclick="setType('expense')">DESPESA (-)</div>
+            </div>
+            <input type="text" id="desc" placeholder="Detalhes da receita/despesa" required style="margin-bottom: 10px;">
+            <input type="number" id="val" placeholder="Valor (R$)" step="0.01" onblur="if(this.value) this.value = parseFloat(this.value).toFixed(2)" required>
+            <button type="submit" class="btn-primary" style="margin-top: 10px;">Lançar</button>
+        </form>
+
+        <div id="summary-container"></div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getDatabase, ref, push, onValue, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyBtVmrCokB2GdkNYL28pNXLRfonamfMA",
+        authDomain: "financeiro-paulo-junior.firebaseapp.com",
+        projectId: "financeiro-paulo-junior",
+        databaseURL: "https://financeiro-paulo-junior-default-rtdb.firebaseio.com/",
+        storageBucket: "financeiro-paulo-junior.firebasestorage.app",
+        messagingSenderId: "31520438240",
+        appId: "1:31520438240:web:fe99ef8a177a759c3add85"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    
+    let currentMember = "";
+    let targetPass = "";
+    let currentType = 'income';
+
+    window.openPass = (name, pass) => {
+        currentMember = name;
+        targetPass = pass;
+        document.getElementById('selection-screen').classList.add('hidden');
+        document.getElementById('password-screen').classList.remove('hidden');
+        document.getElementById('pass-title').innerText = name;
+        document.getElementById('error-msg').innerText = "";
+        document.getElementById('pass-input').value = "";
+        document.getElementById('pass-input').focus();
+    };
+
+    window.goBack = () => {
+        document.getElementById('password-screen').classList.add('hidden');
+        document.getElementById('selection-screen').classList.remove('hidden');
+    };
+
+    window.checkPass = () => {
+        const input = document.getElementById('pass-input').value;
+        const errorDiv = document.getElementById('error-msg');
+        if (input === targetPass) {
+            document.getElementById('password-screen').classList.add('hidden');
+            document.getElementById('app-screen').classList.remove('hidden');
+            document.getElementById('user-display').innerText = "Olá, " + currentMember + ".";
+            startSync();
+        } else {
+            errorDiv.innerText = "Senha incorreta.";
+            document.getElementById('pass-input').value = "";
+        }
+    };
+
+    window.setType = (type) => {
+        currentType = type;
+        document.getElementById('btn-income').classList.toggle('active-income', type === 'income');
+        document.getElementById('btn-expense').classList.toggle('active-expense', type === 'expense');
+    };
+
+    window.toggleMonth = (mId) => {
+        const list = document.getElementById('list-' + mId);
+        const btn = document.getElementById('btn-toggle-' + mId);
+        list.classList.toggle('hidden');
+        btn.innerText = list.classList.contains('hidden') ? 'mostrar' : 'ocultar';
+    };
+
+    function startSync() {
+        onValue(ref(db, 'usuarios/' + currentMember), (snapshot) => {
+            const container = document.getElementById('summary-container');
+            container.innerHTML = '<h3 style="margin-top:25px; color:#555; font-size:14px; text-align:center;">RESUMO MENSAL</h3>';
+            let totalGeral = 0;
+            const data = snapshot.val();
+            
+            if (!data) { document.getElementById('balance').innerText = "R$ 0,00"; return; }
+
+            const months = {};
+            Object.keys(data).forEach(id => {
+                const t = data[id]; t.id = id;
+                const date = new Date(t.timestamp);
+                const name = date.toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
+                if (!months[name]) months[name] = { items: [], saldo: 0 };
+                months[name].items.push(t);
+                months[name].saldo += (t.type === 'income' ? t.amount : -t.amount);
+                totalGeral += (t.type === 'income' ? t.amount : -t.amount);
+            });
+
+            Object.keys(months).reverse().forEach(name => {
+                const m = months[name];
+                const mId = name.replace(/\s/g, '');
+                const card = document.createElement('div');
+                card.className = 'month-card';
+                card.innerHTML = `
+                    <div class="month-header">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <button class="btn-toggle" id="btn-toggle-${mId}" onclick="window.toggleMonth('${mId}')">ocultar</button>
+                            <span style="font-size:13px">${name.toUpperCase()}</span>
+                        </div>
+                        <span style="color:${m.saldo>=0?'green':'red'}; font-size:14px;">R$ ${m.saldo.toFixed(2)}</span>
+                    </div>
+                    <div id="list-${mId}"></div>
+                `;
+                container.appendChild(card);
+                
+                m.items.forEach(item => {
+                    const iDiv = document.createElement('div');
+                    iDiv.className = 'trans-item';
+                    iDiv.innerHTML = `
+                        <div><b>${item.description}</b><br><small style="color:#999">${item.timeStr}</small></div>
+                        <div style="color:${item.type==='income'?'green':'red'}">
+                            ${item.type==='income'?'+':'-'} R$ ${item.amount.toFixed(2)} 
+                            <button class="del-btn" onclick="window.removeTrans('${item.id}')">✕</button>
+                        </div>`;
+                    document.getElementById('list-'+mId).appendChild(iDiv);
+                });
+            });
+            const balDisplay = document.getElementById('balance');
+            balDisplay.innerText = `R$ ${totalGeral.toFixed(2)}`;
+            balDisplay.style.color = totalGeral >= 0 ? 'var(--income)' : 'var(--expense)';
+        });
+    }
+
+    document.getElementById('finance-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const now = new Date();
+        push(ref(db, 'usuarios/' + currentMember), {
+            description: document.getElementById('desc').value,
+            amount: parseFloat(document.getElementById('val').value),
+            type: currentType,
+            timestamp: now.getTime(),
+            timeStr: now.toLocaleDateString() + ' ' + now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+        });
+        document.getElementById('finance-form').reset();
+    });
+
+    window.removeTrans = (id) => { if(confirm("Deseja apagar este registro?")) remove(ref(db, `usuarios/${currentMember}/${id}`)); };
+</script>
+</body>
+</html>
